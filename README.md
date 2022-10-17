@@ -7,7 +7,8 @@ I instead aim to build a layout that feels more organic, more tightly packed, wi
 
 ## Inspiration
 
-I will be basing my approach on this previous work by Joel Simon (https://www.joelsimon.net/evo_floorplans.html) which produces results like this :
+I will be basing my approach on [this previous work by Joel Simon](https://www.joelsimon.net/evo_floorplans.html) which produces results like this :
+
 ![Optimized school](https://www.joelsimon.net/imgs/evo_plans/results_bottom.jpeg)
 
 Of course this approach is built for school floors and optimizing flux so I will have to adapt it.
