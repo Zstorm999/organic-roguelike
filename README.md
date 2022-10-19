@@ -15,7 +15,7 @@ Of course this approach is built for school floors and optimizing flux so I will
 
 ## Plan
 
-- [ ] Drawing arbitrary polygons with bevy
+- [X] Drawing arbitrary polygons with bevy
 - [ ] Implementation of Fortune algorithm for Voronoi diagrams
 - [ ] Genetic algorithm for organic level generation
 - [ ] Making the actual game
