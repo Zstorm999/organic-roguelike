@@ -60,8 +60,6 @@ impl From<&[[f32; 2]]> for Polygon {
             .flatten()
             .collect();
 
-        println!("{:?}", indices);
-
         let mut polygon = Mesh::new(PrimitiveTopology::TriangleList);
         polygon.set_indices(Some(Indices::U32(indices)));
         polygon.insert_attribute(Mesh::ATTRIBUTE_POSITION, points_3d.clone());
@@ -71,10 +69,6 @@ impl From<&[[f32; 2]]> for Polygon {
         points_3d.push(points_3d[0]);
         normals.push(normals[0]);
         uvs.push(uvs[0]);
-
-        println!("{:?}", points_3d);
-        println!("{:?}", normals);
-        println!("{:?}", uvs);
 
         let mut contours = Mesh::new(PrimitiveTopology::LineStrip);
         contours.insert_attribute(Mesh::ATTRIBUTE_POSITION, points_3d);
