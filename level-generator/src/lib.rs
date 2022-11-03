@@ -1,6 +1,6 @@
 pub mod voronoi;
 
-use voronoice::Point;
+pub use voronator::delaunator::Point;
 
 use rand::{distributions::Uniform, thread_rng, Rng};
 
