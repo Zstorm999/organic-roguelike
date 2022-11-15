@@ -10,7 +10,6 @@ use voronator::{
 pub struct Cells(Vec<Polygon<Point>>);
 
 impl Cells {
-    #[inline(always)]
     pub fn iter_cells(&self) -> Iter<Polygon<Point>> {
         self.0.iter()
     }
@@ -238,12 +237,10 @@ fn is_inside(poly: &Polygon<Point>, other: &Polygon<Point>) -> bool {
     return true;
 }
 
-#[inline(always)]
 fn almost_eq(a: f64, b: f64, epsilon: f64) -> bool {
     f64::abs(a - b) <= epsilon
 }
 
-#[inline(always)]
 fn max_min(a: f64, b: f64) -> (f64, f64) {
     if a > b {
         (a, b)
