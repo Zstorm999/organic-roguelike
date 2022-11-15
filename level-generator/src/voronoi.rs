@@ -187,8 +187,9 @@ pub fn alpha_shape(points: &[Point], alpha: f64) -> Polygon<Point> {
 
 fn is_inside(poly: &Polygon<Point>, other: &Polygon<Point>) -> bool {
     for p in poly.points() {
+        let mut cross_count = 0;
+
         for i in 0..other.points().len() {
-            println!("iteration {}", i);
             let j = if i == 0 {
                 other.points().len() - 1
             } else {
@@ -198,20 +199,39 @@ fn is_inside(poly: &Polygon<Point>, other: &Polygon<Point>) -> bool {
             let start = &other.points()[j];
             let end = &other.points()[i];
 
-            let pa = Point {
-                x: p.x - start.x,
-                y: p.y - start.y,
-            };
+            let epsilon = 1e-12;
 
-            let pb = Point {
-                x: end.x - start.x,
-                y: end.y - start.x,
-            };
+            if almost_eq(start.x, end.x, epsilon) {
+                if p.x < start.x {
+                    let (y_max, y_min) = max_min(start.y, end.y);
 
-            // one point not inside is enough
-            if is_to_the_left(&pa, &pb) {
-                return false;
+                    if p.y >= y_min && p.x <= y_max {
+                        cross_count += 1;
+                    }
+                }
+                continue;
+            } else if almost_eq(start.y, end.y, epsilon) {
+                //ignore tangent lines
+                continue;
             }
+
+            // derived from y = ax + b
+            let a = (start.y - end.y) / (start.x - end.x);
+            let b = start.y - a * start.x;
+            let cross_x = (p.y - b) / a;
+
+            if cross_x >= p.x {
+                let (max_x, min_x) = max_min(start.x, end.x);
+
+                if cross_x >= min_x && cross_x <= max_x {
+                    cross_count += 1
+                }
+            }
+        }
+
+        if cross_count % 2 == 0 {
+            // crossing an even number of edges means we are outside the polygon
+            return false;
         }
     }
 
@@ -219,8 +239,17 @@ fn is_inside(poly: &Polygon<Point>, other: &Polygon<Point>) -> bool {
 }
 
 #[inline(always)]
-fn is_to_the_left(pa: &Point, pb: &Point) -> bool {
-    ((pb.x * pa.y) - (pa.x * pb.y)) > 0.0
+fn almost_eq(a: f64, b: f64, epsilon: f64) -> bool {
+    f64::abs(a - b) <= epsilon
+}
+
+#[inline(always)]
+fn max_min(a: f64, b: f64) -> (f64, f64) {
+    if a > b {
+        (a, b)
+    } else {
+        (b, a)
+    }
 }
 
 #[cfg(test)]
@@ -245,5 +274,22 @@ mod test {
         ]);
 
         assert!(is_inside(&triangle, &square))
+    }
+
+    #[test]
+    fn triangle_inside_triangle() {
+        let t1 = Polygon::from_points(vec![
+            Point { x: 0.0, y: 1.0 },
+            Point { x: -1.0, y: -1.0 },
+            Point { x: 1.0, y: -1.0 },
+        ]);
+
+        let t2 = Polygon::from_points(vec![
+            Point { x: 0.0, y: 0.5 },
+            Point { x: -0.5, y: -0.5 },
+            Point { x: 0.5, y: -0.5 },
+        ]);
+
+        assert!(is_inside(&t2, &t1))
     }
 }
