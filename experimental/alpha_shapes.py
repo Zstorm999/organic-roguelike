@@ -26,6 +26,7 @@ def alpha_shape(points, alpha, only_outer=True):
             # already added
             assert (j, i) in edges, "Can't go twice over same directed edge right?"
             edges.remove((j, i))
+            print("Removed")
             return
         edges.add((i, j))
 
@@ -61,13 +62,15 @@ from time import perf_counter
 
 nb_points = 300
 x = 3.0 * np.random.rand(nb_points)
-y = 2.0 * np.random.rand(nb_points) - 1.0
+y = 3.0 * np.random.rand(nb_points)
 inside = (
-    (x**2 + y**2 > 1.0)
-    & ((x - 3) ** 2 + y**2 > 1.0)
-    & ((x - 1.5) ** 2 + y**2 > 0.09)
+    (x ** 2 + y ** 2 > 1.0)
+    & ((x - 3) ** 2 + y ** 2 > 1.0)
+    & ((x - 1.5) ** 2 + y ** 2 > 0.09)
 )
 points = np.vstack([x[inside], y[inside]]).T
+
+points = np.vstack([x, y]).T
 
 now = perf_counter()
 
@@ -75,6 +78,7 @@ now = perf_counter()
 edges = alpha_shape(points, alpha=1, only_outer=False)
 
 print(f"{perf_counter() - now}")
+print(len(edges))
 
 # Plotting the output
 figure()

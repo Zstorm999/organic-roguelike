@@ -21,11 +21,12 @@ impl Polygon {
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
+        color: Color,
     ) {
         commands.spawn_bundle(MaterialMesh2dBundle {
             mesh: meshes.add(self.polygon.clone()).into(),
             transform: Transform::default().with_scale(Vec3::splat(128.0)),
-            material: materials.add(ColorMaterial::from(Color::PURPLE)),
+            material: materials.add(ColorMaterial::from(color)),
             ..default()
         });
 

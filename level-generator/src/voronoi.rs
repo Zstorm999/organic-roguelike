@@ -7,17 +7,17 @@ use voronator::{
     VoronoiDiagram,
 };
 
-pub struct Cells(VoronoiDiagram<Point>);
+pub struct Cells(Vec<Polygon<Point>>);
 
 impl Cells {
     #[inline(always)]
     pub fn iter_cells(&self) -> Iter<Polygon<Point>> {
-        self.0.cells().into_iter()
+        self.0.iter()
     }
 }
 
 pub fn generate_voronoi(points: Vec<Point>) -> Cells {
-    let size = 1.0;
+    let size = 2.0;
     let _clip_polygon = Polygon::from_points(vec![
         Point { x: -size, y: -size },
         Point { x: size, y: -size },
@@ -25,9 +25,69 @@ pub fn generate_voronoi(points: Vec<Point>) -> Cells {
         Point { x: -size, y: size },
     ]);
 
-    //let alpha_bound = alpha_shape(&points, 0.6);
+    let alpha_bound = alpha_shape(&points, f64::INFINITY);
 
-    Cells(VoronoiDiagram::with_bounding_polygon(points, &_clip_polygon).unwrap())
+    let barycenter = alpha_bound
+        .points()
+        .iter()
+        .fold(Point { x: 0.0, y: 0.0 }, |a, point| Point {
+            x: a.x + point.x,
+            y: a.y + point.y,
+        });
+
+    let barycenter = Point {
+        x: barycenter.x / alpha_bound.points().len() as f64,
+        y: barycenter.y / alpha_bound.points().len() as f64,
+    };
+
+    let scale_factor = 1.1;
+
+    let extended_bound = Polygon::from_points(
+        alpha_bound
+            .points()
+            .iter()
+            .map(|p| {
+                let mut center = Point {
+                    x: p.x - barycenter.x,
+                    y: p.y - barycenter.y,
+                };
+
+                // rescale
+                center.x *= scale_factor;
+                center.y *= scale_factor;
+
+                // put back in "standard" coordinates
+                center.x += barycenter.x;
+                center.y += barycenter.y;
+                center
+            })
+            .collect(),
+    );
+
+    print!("[");
+    for p in extended_bound.points() {
+        print!("{:?}, ", p);
+    }
+
+    println!("]");
+
+    Cells(
+        VoronoiDiagram::with_bounding_polygon(points, &_clip_polygon)
+            .unwrap()
+            .cells()
+            .into_iter()
+            .filter_map(|poly| {
+                if !is_inside(poly, &extended_bound) {
+                    // rectify polygon to fit in convex hull
+                    None
+                } else {
+                    let points: Vec<Point> = poly.points().to_owned();
+                    Some(Polygon::from_points(points))
+                }
+            })
+            .to_owned()
+            .collect(),
+    )
 }
 
 pub fn alpha_shape(points: &[Point], alpha: f64) -> Polygon<Point> {
@@ -38,7 +98,7 @@ pub fn alpha_shape(points: &[Point], alpha: f64) -> Polygon<Point> {
     let mut edges = HashSet::new();
 
     fn add_edge(edges: &mut HashSet<(usize, usize)>, i: usize, j: usize) {
-        if edges.contains(&(i, j)) || edges.contains(&(i, j)) {
+        if edges.contains(&(i, j)) || edges.contains(&(j, i)) {
             assert!(edges.contains(&(j, i)));
             edges.remove(&(j, i));
             return;
@@ -46,9 +106,6 @@ pub fn alpha_shape(points: &[Point], alpha: f64) -> Polygon<Point> {
 
         edges.insert((i, j));
     }
-
-    println!("{} points", points.len());
-    println!("{:?} triangles", t.len());
 
     // waiting for iter_array_chunk to make it to standard (only nightly for now and I don't wanna go there)
     for i in 0..t.len() {
@@ -94,20 +151,13 @@ pub fn alpha_shape(points: &[Point], alpha: f64) -> Polygon<Point> {
     // really disgusting O(n²) loop, need rework
     // this should actually be fine since we don’t have a lot of points
 
-    println!("{} edges", edges.len());
-
     let mut vertices: Vec<Point> = Vec::new();
     let mut current_edge = edges.iter().nth(0).unwrap();
 
     vertices.push(points[current_edge.0].clone());
     vertices.push(points[current_edge.1].clone());
 
-    let mut counter = 0;
-
     loop {
-        print!("\riteration {}", counter);
-        counter += 1;
-
         let last_edge = current_edge;
 
         for edge in &edges {
@@ -116,8 +166,6 @@ pub fn alpha_shape(points: &[Point], alpha: f64) -> Polygon<Point> {
 
                 if points[edge.1] == vertices[0] {
                     // we have looped !
-                    println!("Polygon with {} vertices", vertices.len());
-
                     return Polygon::from_points(vertices);
                 } else {
                     current_edge = edge;
@@ -132,9 +180,70 @@ pub fn alpha_shape(points: &[Point], alpha: f64) -> Polygon<Point> {
                 "\nWARNING: unable to close alpha shape normally, generating a non-existing edge"
             );
 
-            println!("Polygon with {} vertices", vertices.len());
-
             return Polygon::from_points(vertices);
         }
+    }
+}
+
+fn is_inside(poly: &Polygon<Point>, other: &Polygon<Point>) -> bool {
+    for p in poly.points() {
+        for i in 0..other.points().len() {
+            println!("iteration {}", i);
+            let j = if i == 0 {
+                other.points().len() - 1
+            } else {
+                i - 1
+            };
+
+            let start = &other.points()[j];
+            let end = &other.points()[i];
+
+            let pa = Point {
+                x: p.x - start.x,
+                y: p.y - start.y,
+            };
+
+            let pb = Point {
+                x: end.x - start.x,
+                y: end.y - start.x,
+            };
+
+            // one point not inside is enough
+            if is_to_the_left(&pa, &pb) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+#[inline(always)]
+fn is_to_the_left(pa: &Point, pb: &Point) -> bool {
+    ((pb.x * pa.y) - (pa.x * pb.y)) > 0.0
+}
+
+#[cfg(test)]
+mod test {
+
+    use voronator::{delaunator::Point, polygon::Polygon};
+
+    use super::*;
+    #[test]
+    fn triangle_inside_square() {
+        let square = Polygon::from_points(vec![
+            Point { x: -1.0, y: -1.0 },
+            Point { x: -1.0, y: 1.0 },
+            Point { x: 1.0, y: 1.0 },
+            Point { x: 1.0, y: -1.0 },
+        ]);
+
+        let triangle = Polygon::from_points(vec![
+            Point { x: 0.0, y: 0.5 },
+            Point { x: -0.5, y: -0.5 },
+            Point { x: 0.5, y: -0.5 },
+        ]);
+
+        assert!(is_inside(&triangle, &square))
     }
 }
