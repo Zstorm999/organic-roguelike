@@ -2,15 +2,10 @@
 name = "game"
 version = "0.1.0"
 edition = "2021"
+default-run = "game"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-level-generator = {path = "../level-generator"}
-bevy = "0.8"
+bevy = "0.9"
 
-[profile.dev]
-opt-level = 1
-
-[profile.dev.package."*"]
-opt-level = 3

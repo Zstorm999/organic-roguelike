@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 voronator = "0.2.0"
 rand = {version="0.8.5", features=["small_rng"]}
+graplot = "0.1.21"
+
+[[bin]]
+name = "levelgen-test"

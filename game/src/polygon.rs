@@ -11,27 +11,27 @@ use bevy::sprite::MaterialMesh2dBundle;
    No verification is performed on the convexity, this is left up to the user
 */
 pub struct Polygon {
-    polygon: Mesh,
-    contours: Mesh,
+    _polygon: Mesh,
+    _contours: Mesh,
 }
 
 impl Polygon {
-    pub fn draw(
+    pub fn _draw(
         &self,
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
         color: Color,
     ) {
-        commands.spawn_bundle(MaterialMesh2dBundle {
-            mesh: meshes.add(self.polygon.clone()).into(),
+        commands.spawn(MaterialMesh2dBundle {
+            mesh: meshes.add(self._polygon.clone()).into(),
             transform: Transform::default().with_scale(Vec3::splat(128.0)),
             material: materials.add(ColorMaterial::from(color)),
             ..default()
         });
 
-        commands.spawn_bundle(MaterialMesh2dBundle {
-            mesh: meshes.add(self.contours.clone()).into(),
+        commands.spawn(MaterialMesh2dBundle {
+            mesh: meshes.add(self._contours.clone()).into(),
             transform: Transform::default().with_scale(Vec3::splat(128.0)),
             material: materials.add(ColorMaterial::from(Color::BLACK)),
             ..default()
@@ -76,7 +76,10 @@ impl From<&[[f32; 2]]> for Polygon {
         contours.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
         contours.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
 
-        Polygon { polygon, contours }
+        Polygon {
+            _polygon: polygon,
+            _contours: contours,
+        }
     }
 }
 
@@ -97,7 +100,7 @@ mod tests {
         let shape: Polygon = points.into();
 
         shape
-            .polygon
+            ._polygon
             .attribute(Mesh::ATTRIBUTE_POSITION)
             .unwrap()
             .as_float3()
@@ -110,7 +113,7 @@ mod tests {
             });
 
         shape
-            .polygon
+            ._polygon
             .attribute(Mesh::ATTRIBUTE_NORMAL)
             .unwrap()
             .as_float3()
@@ -119,7 +122,7 @@ mod tests {
             .for_each(|n| assert_eq!(n, &[0.0, 0.0, 1.0]));
 
         shape
-            .polygon
+            ._polygon
             .indices()
             .unwrap()
             .iter()
